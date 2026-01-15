@@ -143,6 +143,8 @@ Click on **"Compliance"** in the sidebar to access the regulatory compliance ana
 
 ### 4. Run Analysis
 
+> **Note:** Analysis can take several minutes depending on document size. The system processes regulations page-by-page with parallel LLM calls, but large documents with many clauses will take longer. Monitor progress in the logs panel.
+
 1. Click **"Analyze Compliance"**
 2. The system will:
    - Find relevant clauses for each SOP section
@@ -176,4 +178,68 @@ Use the search panel to find clauses by meaning:
 | `/api/regulation/analyze` | POST | Start compliance analysis job |
 | `/api/regulation/analyze/{job_id}` | GET | Get analysis results |
 | `/api/regulation/search` | POST | Semantic search of clauses |
+
+## Deployment & Routing
+
+### The HTTPS Problem
+
+When deploying the frontend to Vercel (HTTPS), browsers block "mixed content" - an HTTPS page cannot make API calls to an HTTP backend. This means we can't directly call our EC2 FastAPI server via HTTP.
+
+### Solution: Cloudflare Tunnel
+
+We use Cloudflare Tunnel to provide HTTPS termination without needing a domain or SSL certificate:
+
+```
+Browser (HTTPS)
+      ↓
+Vercel Frontend (interface-virid-ten.vercel.app)
+      ↓
+Cloudflare Edge (*.trycloudflare.com)
+      ↓ (encrypted tunnel)
+cloudflared on EC2
+      ↓
+FastAPI Backend (localhost:8000)
+```
+
+### How It Works
+
+1. `cloudflared` runs on EC2 and opens an **outbound** connection to Cloudflare
+2. Cloudflare assigns a random HTTPS URL (e.g., `https://snap-summary-imaging-restructuring.trycloudflare.com`)
+3. API requests to that URL are routed through the tunnel to EC2's localhost:8000
+4. Cloudflare handles SSL/TLS termination, so all API calls are secure
+
+### Environment Variables
+
+Set in Vercel dashboard:
+```
+NEXT_PUBLIC_API_URL=https://<your-tunnel>.trycloudflare.com
+```
+
+### Starting the Tunnel on EC2
+
+```bash
+# SSH into EC2
+ssh -i ~/.ssh/backend-key.pem ubuntu@<EC2_IP>
+
+# Ensure backend is running
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# In another terminal, start Cloudflare tunnel
+cloudflared tunnel --url http://localhost:8000
+
+# Note the https://*.trycloudflare.com URL and set it in Vercel
+```
+
+### Making Tunnels Persistent
+
+The tunnel URL changes on restart. To auto-restart (but still get new URLs):
+
+```bash
+pm2 start "cloudflared tunnel --url http://localhost:8000" --name cf-backend
+pm2 save
+```
+
+For permanent URLs, create a Cloudflare account and named tunnel with your own domain
 

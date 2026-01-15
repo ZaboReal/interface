@@ -103,3 +103,66 @@ You can verify the real-time sync is working in two ways:
 | Character Count | Live character count tracking |
 | Reconnection | Automatic reconnection on connection loss |
 
+## Deployment & Routing
+
+### The HTTPS Problem
+
+When deploying to Vercel (HTTPS), browsers block "mixed content" - an HTTPS page cannot connect to an insecure WebSocket (ws://). This means we can't directly connect to our EC2 WebSocket server via HTTP.
+
+### Solution: Cloudflare Tunnel
+
+We use Cloudflare Tunnel to provide HTTPS termination without needing a domain or SSL certificate:
+
+```
+Browser (HTTPS)
+      ↓
+Vercel Frontend (interface-virid-ten.vercel.app)
+      ↓
+Cloudflare Edge (*.trycloudflare.com)
+      ↓ (encrypted tunnel)
+cloudflared on EC2
+      ↓
+WebSocket Server (localhost:3001)
+```
+
+### How It Works
+
+1. `cloudflared` runs on EC2 and opens an **outbound** connection to Cloudflare
+2. Cloudflare assigns a random HTTPS URL (e.g., `https://apollo-close-reuters-overhead.trycloudflare.com`)
+3. WebSocket requests to that URL are routed through the tunnel to EC2's localhost:3001
+4. Cloudflare handles SSL/TLS termination, so the browser sees a secure `wss://` connection
+
+### Environment Variables
+
+Set in Vercel dashboard:
+```
+NEXT_PUBLIC_WEBSOCKET_URL=https://<your-tunnel>.trycloudflare.com
+```
+
+### Starting the Tunnel on EC2
+
+```bash
+# SSH into EC2
+ssh -i ~/.ssh/backend-key.pem ubuntu@<EC2_IP>
+
+# Start WebSocket server
+cd websocket-server
+pm2 start server.js --name websocket-server
+
+# Start Cloudflare tunnel
+cloudflared tunnel --url http://localhost:3001
+
+# Note the https://*.trycloudflare.com URL and set it in Vercel
+```
+
+### Making Tunnels Persistent
+
+The tunnel URL changes on restart. To auto-restart (but still get new URLs):
+
+```bash
+pm2 start "cloudflared tunnel --url http://localhost:3001" --name cf-websocket
+pm2 save
+```
+
+For permanent URLs, create a Cloudflare account and named tunnel with your own domain
+
