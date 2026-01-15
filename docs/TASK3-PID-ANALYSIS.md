@@ -1,0 +1,277 @@
+# Task 3: P&ID Diagram Analysis
+
+A computer vision-powered system that analyzes Piping & Instrumentation Diagrams (P&IDs), extracts components and their connections, and cross-references against SOP design specifications to identify discrepancies.
+
+## Thought Process & Approach
+
+### The Problem
+P&ID diagrams are critical engineering documents that show equipment, piping, and instrumentation in process plants. Ensuring these diagrams match the SOP design specifications is essential for safety and compliance. Manual verification is:
+- Extremely tedious (diagrams can have hundreds of components)
+- Error-prone (easy to miss mismatches in design pressures/temperatures)
+- Requires specialized knowledge
+- Time-consuming for multi-page diagrams
+
+### Our Solution
+We built an automated P&ID analysis pipeline that:
+
+1. **Detects Components**: Uses YOLO object detection (via Roboflow API) to identify symbols for valves, pumps, tanks, heat exchangers, sensors, etc.
+
+2. **Extracts Text**: OCR (Tesseract) extracts equipment tags (V-101, P-203), design specifications (275 psig, 100°F), and labels.
+
+3. **Associates Labels with Symbols**: Matches text to nearby components based on spatial proximity.
+
+4. **Builds a Graph**: Creates a NetworkX graph representing the P&ID topology - components as nodes, connections as edges.
+
+5. **Parses SOP Specifications**: Extracts equipment design limits from SOP documents using LLM.
+
+6. **Cross-References**: Compares P&ID specifications against SOP limits, identifying:
+   - Matches (specs align)
+   - Pressure discrepancies
+   - Temperature discrepancies
+   - Missing components (in SOP but not P&ID)
+   - Extra components (in P&ID but not SOP)
+
+### Technical Decisions
+
+- **YOLO via Roboflow**: We use a pre-trained P&ID symbol detection model via Roboflow's API. This provides high accuracy without needing to train our own model. We include a fallback to traditional CV (contour detection) if the API is unavailable.
+
+- **Parallel Multi-Page Processing**: P&IDs are often multi-page PDFs. We process pages in parallel to minimize total analysis time.
+
+- **Graph Representation**: A graph structure naturally represents P&ID topology, enabling future queries like "find all paths from pump X to tank Y" or "what's upstream of valve Z".
+
+- **Tolerance-Based Matching**: We use ±5 psig/°F tolerance when comparing specs, since minor differences may be acceptable and exact matches are rare in practice.
+
+- **LLM for SOP Parsing**: SOP design limit tables vary widely in format. Rather than building rigid parsers, we use GPT-4 to intelligently extract structured data from any table format.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      P&ID Analysis Pipeline                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────┐         ┌─────────────────────────────────────────┐  │
+│  │ P&ID PDF │────────►│           Per-Page Processing            │  │
+│  └──────────┘         │  (Parallel)                              │  │
+│                       │  ┌─────────────┐    ┌────────────────┐  │  │
+│                       │  │ YOLO Detect │    │ OCR Text       │  │  │
+│                       │  │ (Roboflow)  │    │ Extraction     │  │  │
+│                       │  └──────┬──────┘    └───────┬────────┘  │  │
+│                       │         │                   │           │  │
+│                       │         └─────────┬─────────┘           │  │
+│                       │                   ▼                     │  │
+│                       │         ┌─────────────────┐             │  │
+│                       │         │ Text-Symbol     │             │  │
+│                       │         │ Association     │             │  │
+│                       │         └────────┬────────┘             │  │
+│                       │                  │                      │  │
+│                       │                  ▼                      │  │
+│                       │         ┌─────────────────┐             │  │
+│                       │         │ Line Detection  │             │  │
+│                       │         │ (Connections)   │             │  │
+│                       │         └────────┬────────┘             │  │
+│                       └──────────────────┼──────────────────────┘  │
+│                                          │                         │
+│                                          ▼                         │
+│  ┌──────────┐         ┌─────────────────────────────────────────┐  │
+│  │ SOP Doc  │────────►│ LLM Parse Design Limits                  │  │
+│  └──────────┘         └─────────────────┬───────────────────────┘  │
+│                                          │                         │
+│       ┌──────────────────────────────────┴────────────┐            │
+│       │                                               │            │
+│       ▼                                               ▼            │
+│  ┌────────────────┐                        ┌─────────────────────┐ │
+│  │ Graph Builder  │                        │ Cross-Reference     │ │
+│  │ (NetworkX)     │                        │ P&ID vs SOP         │ │
+│  └───────┬────────┘                        └──────────┬──────────┘ │
+│          │                                            │            │
+│          ▼                                            ▼            │
+│  ┌────────────────┐                        ┌─────────────────────┐ │
+│  │ Graph JSON     │                        │ Discrepancy Report  │ │
+│  │ Visualization  │                        │                     │ │
+│  └────────────────┘                        └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Components
+
+**Backend (`/backend/app/task3_cv/`):**
+- `pid_processor.py` - PDF to image conversion and preprocessing
+- `yolo_detector.py` - YOLO-based symbol detection via Roboflow
+- `text_detection.py` - OCR text extraction with bounding boxes
+- `line_detection.py` - Connection detection using Hough transform
+- `graph_construction.py` - Builds NetworkX graph from components
+- `equipment_spec_extractor.py` - Extracts design specs from P&ID text
+- `sop_cross_reference.py` - Compares P&ID specs vs SOP limits
+- `image_annotator.py` - Creates annotated P&ID images
+
+**Frontend (`/frontend/src/app/pid-analysis/`):**
+- `PIDUploader.tsx` - Upload interface with progress tracking
+- `GraphViewer.tsx` - Interactive graph visualization
+- `ComponentList.tsx` - Filterable component table
+- `DiscrepancyReport.tsx` - Comparison results with export
+
+### Data Flow Example
+
+```
+Input: P&ID "design_diagram.pdf" + SOP "operations.docx"
+                    │
+                    ▼
+P&ID Processing:
+  - Page 1: Detect V-101 (Valve), P-203 (Pump)
+  - Page 2: Detect E-742-SHELL (Heat Exchanger Shell)
+  - Extract specs: V-101 = 275 psig @ 100°F
+  - Build graph with connections
+                    │
+                    ▼
+SOP Processing:
+  - Parse Design Limits table
+  - Extract: V-101 = 275 psig @ 100°F
+            E-742 = 300 psig @ 375°F
+            F-715 = 150 psig @ 200°F
+                    │
+                    ▼
+Cross-Reference:
+  - V-101: ✓ MATCH (275 psig, 100°F)
+  - P-203: ✓ MATCH (found in both)
+  - E-742: ⚠ PRESSURE DISCREPANCY (shell specs differ)
+  - F-715: ✗ NOT FOUND in P&ID (but required by SOP)
+                    │
+                    ▼
+Report: 2 matches, 1 pressure issue, 1 missing component
+```
+
+## How to Use
+
+### 1. Start the Application
+
+```bash
+# From the app directory
+./start.sh
+
+# Or manually:
+cd backend && python run.py   # Terminal 1
+cd frontend && npm run dev    # Terminal 2
+```
+
+### 2. Access the P&ID Analysis Page
+
+Navigate to `http://localhost:3000` and click on **"P&ID Analysis"** in the sidebar, or go directly to:
+
+```
+http://localhost:3000/pid-analysis
+```
+
+### 3. Upload Files
+
+In the **UPLOAD** tab:
+
+1. **Upload P&ID Diagram**
+   - Click "Select P&ID File" or drag-and-drop
+   - Supported: PDF files (can be multi-page)
+
+2. **Upload SOP Document**
+   - Click "Select SOP File" or drag-and-drop
+   - Supported: PDF or DOCX files
+
+3. Click **"START_PID_ANALYSIS"**
+
+### 4. Monitor Progress
+
+The progress bar shows:
+- PDF conversion status
+- Component detection progress (per page)
+- Text extraction status
+- Graph building status
+- SOP parsing status
+- Cross-reference status
+
+### 5. View Results
+
+Navigate through the tabs:
+
+#### GRAPH Tab
+- Interactive visualization of P&ID topology
+- Nodes = Components (color-coded by type)
+- Edges = Connections between components
+- Click nodes for details
+
+#### COMPONENTS Tab
+- Table of all detected components
+- Columns: Tag, Type, Confidence, Page, Specifications
+- Filter by component type (valve, pump, tank, etc.)
+- Sort by any column
+
+#### DISCREPANCIES Tab
+- **Status Banner**: Overall pass/fail with match percentage
+- **Matched Items**: Equipment found in both P&ID and SOP with matching specs (green checkmarks)
+- **Discrepancies**: Items with spec mismatches (yellow warnings)
+- **Missing in P&ID**: SOP items not found in diagram (red X)
+- **Extra in P&ID**: Components not in SOP (blue info)
+- **Export**: Download report as CSV or JSON
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/cv/analyze` | POST | Start P&ID analysis job |
+| `/api/cv/status/{job_id}` | GET | Get analysis progress |
+| `/api/cv/graph/{job_id}` | GET | Get component graph JSON |
+| `/api/cv/components/{job_id}` | GET | Get detected components |
+| `/api/cv/sop-components/{job_id}` | GET | Get SOP equipment list |
+| `/api/cv/discrepancies/{job_id}` | GET | Get cross-reference report |
+| `/api/cv/annotated-images/{job_id}` | GET | Get annotated P&ID images |
+
+## Environment Variables
+
+```env
+# Backend (.env)
+OPENAI_API_KEY=your-openai-key           # For SOP parsing
+ROBOFLOW_API_KEY=your-roboflow-key       # For YOLO detection
+SUPABASE_URL=your-supabase-url           # For persistence
+SUPABASE_KEY=your-supabase-key
+
+# Frontend (.env.local)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Sample Data
+
+The `/data/` folder contains sample files for testing:
+- `pid/diagram.pdf` - Sample P&ID diagram
+- `sop/sop_cv.docx` - Sample SOP with design specifications
+
+## Detection Capabilities
+
+### Supported Component Types
+| Type | Examples |
+|------|----------|
+| Valve | Gate, Globe, Ball, Check, Control valves |
+| Pump | Centrifugal, Positive displacement |
+| Tank | Storage tanks, Vessels |
+| Heat Exchanger | Shell & tube, Plate |
+| Sensor | Pressure, Temperature, Flow, Level |
+| Instrument | Controllers, Indicators |
+| Compressor | Gas compressors |
+| Filter | In-line filters, Strainers |
+
+### Extracted Specifications
+- Design Pressure (psig, psi, bar)
+- Design Temperature (°F, °C)
+- Equipment Tags (V-101, P-203, E-742)
+- Line Numbers
+- Service descriptions
+
+## Limitations & Future Improvements
+
+**Current Limitations:**
+- Detection accuracy depends on P&ID drawing quality
+- Very dense diagrams may have text association errors
+- Non-standard symbols may not be recognized
+
+**Planned Improvements:**
+- Custom YOLO model training for better accuracy
+- Support for ISA symbol standards
+- Line flow direction detection
+- Equipment datasheet cross-reference
+- Export to CAD formats
