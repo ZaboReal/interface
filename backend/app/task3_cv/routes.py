@@ -26,6 +26,21 @@ from .models.schemas import (
 # In production, you'd store these in Supabase Storage or S3
 annotated_images_cache: Dict[str, List[Dict]] = {}
 
+# In-memory log storage per job (same pattern as Task 2)
+job_logs: Dict[str, List[str]] = {}
+
+
+def add_log(job_id: str, message: str):
+    """Add a log message for a job."""
+    if job_id not in job_logs:
+        job_logs[job_id] = []
+    # Keep last 200 logs per job
+    if len(job_logs[job_id]) >= 200:
+        job_logs[job_id] = job_logs[job_id][-100:]
+    job_logs[job_id].append(message)
+    print(message)  # Also print to console
+
+
 router = APIRouter()
 
 
@@ -106,17 +121,19 @@ async def run_analysis(
     import asyncio
 
     try:
-        print(f"[Task 3] Starting Azure-style analysis for job {job_id}")
+        add_log(job_id, "=" * 50)
+        add_log(job_id, "Starting P&ID Analysis Pipeline")
+        add_log(job_id, "=" * 50)
 
         # Step 1: Convert PDF to images AND start SOP parsing in parallel
         await pid_repository.update_job_status(job_id, "processing", 10)
-        print(f"[Task 3] Converting PDF to images + Starting SOP parsing (parallel)...")
+        add_log(job_id, "Step 1: Converting PDF to images + Starting SOP parsing (parallel)...")
 
         # Start SOP parsing early (it's independent of P&ID processing)
         sop_task = asyncio.create_task(sop_cross_reference.parse_sop(sop_path))
 
         images = pid_processor.pdf_to_images(pid_path)
-        print(f"[Task 3] Converted {len(images)} pages")
+        add_log(job_id, f"  -> Converted PDF to {len(images)} page(s)")
 
         all_components = []
         all_text_elements = []
@@ -125,11 +142,13 @@ async def run_analysis(
 
         for page_idx, img in enumerate(images):
             page_num = page_idx + 1
-            print(f"[Task 3] Processing page {page_num}/{len(images)}...")
+            add_log(job_id, "-" * 40)
+            add_log(job_id, f"Processing Page {page_num}/{len(images)}")
+            add_log(job_id, "-" * 40)
 
             # Step 2: Detect symbols with Roboflow
             await pid_repository.update_job_status(job_id, "processing", 10 + (page_idx * 50 // len(images)))
-            print(f"[Task 3] Page {page_num}: Detecting symbols...")
+            add_log(job_id, f"  Step 2: Detecting symbols (YOLO/Roboflow)...")
             prep = pid_processor.preprocess(img)
             symbols, _ = yolo_detector.detect_components(img, prep)
 
@@ -137,36 +156,36 @@ async def run_analysis(
             for sym in symbols:
                 sym["page_number"] = page_num
 
-            print(f"[Task 3] Page {page_num}: Found {len(symbols)} symbols")
+            add_log(job_id, f"    -> Found {len(symbols)} symbols")
 
             # Step 3: Detect text with high-quality OCR
-            print(f"[Task 3] Page {page_num}: Detecting text with OCR...")
+            add_log(job_id, f"  Step 3: Detecting text (OCR)...")
             text_elements = text_detection_service.detect_text(img)
 
             # Add page number to text
             for text in text_elements:
                 text["page_number"] = page_num
 
-            print(f"[Task 3] Page {page_num}: Found {len(text_elements)} text elements")
+            add_log(job_id, f"    -> Found {len(text_elements)} text elements")
 
             # Step 4: Associate text with symbols (tag assignment)
-            print(f"[Task 3] Page {page_num}: Associating text with symbols...")
+            add_log(job_id, f"  Step 4: Associating text with symbols...")
             symbols, unassociated_text = text_detection_service.associate_text_with_symbols(
                 text_elements, symbols
             )
 
             # Count how many symbols got tags
             tagged_count = sum(1 for s in symbols if s.get("tag"))
-            print(f"[Task 3] Page {page_num}: {tagged_count}/{len(symbols)} symbols tagged")
+            add_log(job_id, f"    -> {tagged_count}/{len(symbols)} symbols tagged")
 
             # Step 5: Detect lines AFTER masking symbols/text
-            print(f"[Task 3] Page {page_num}: Detecting lines (with masking)...")
+            add_log(job_id, f"  Step 5: Detecting lines (with masking)...")
             lines = line_detection_service.detect_lines(img, symbols, text_elements)
 
             # Optionally merge collinear lines
             lines = line_detection_service.merge_collinear_lines(lines)
 
-            print(f"[Task 3] Page {page_num}: Found {len(lines)} lines")
+            add_log(job_id, f"    -> Found {len(lines)} lines/connections")
 
             # Add page number to lines
             for line in lines:
@@ -189,8 +208,12 @@ async def run_analysis(
 
         # Store annotated images in cache
         annotated_images_cache[job_id] = annotated_pages
-        print(f"[Task 3] Total: {len(all_components)} components, {len(all_text_elements)} text, {len(all_lines)} lines")
-        print(f"[Task 3] Created {len(annotated_pages)} annotated images")
+        add_log(job_id, "=" * 50)
+        add_log(job_id, "Page Processing COMPLETE")
+        add_log(job_id, f"  Total components: {len(all_components)}")
+        add_log(job_id, f"  Total text elements: {len(all_text_elements)}")
+        add_log(job_id, f"  Total lines: {len(all_lines)}")
+        add_log(job_id, f"  Annotated images: {len(annotated_pages)}")
 
         # Save components to Supabase
         await pid_repository.update_job_status(job_id, "processing", 60)
@@ -205,7 +228,8 @@ async def run_analysis(
 
         # Step 6: Run graph building AND spec extraction in PARALLEL
         await pid_repository.update_job_status(job_id, "processing", 70)
-        print(f"[Task 3] Building graph + Extracting specs (parallel)...")
+        add_log(job_id, "=" * 50)
+        add_log(job_id, "Step 6: Building graph + Extracting specs (parallel)...")
 
         async def build_graph_async():
             """Wrapper to run graph building."""
@@ -215,7 +239,7 @@ async def run_analysis(
                 all_text_elements
             )
             graph_data = graph_construction_service.graph_to_dict(graph)
-            print(f"[Task 3] Graph: {graph_data['stats']['node_count']} nodes, {graph_data['stats']['edge_count']} edges")
+            add_log(job_id, f"  -> Graph built: {graph_data['stats']['node_count']} nodes, {graph_data['stats']['edge_count']} edges")
             return graph_data
 
         async def extract_specs_async():
@@ -228,9 +252,9 @@ async def run_analysis(
                 )
                 all_pid_specs.extend(page_specs)
             pid_specs_dicts = equipment_spec_extractor.specs_to_dict(all_pid_specs)
-            print(f"[Task 3] Extracted {len(pid_specs_dicts)} equipment specs from P&ID")
+            add_log(job_id, f"  -> Extracted {len(pid_specs_dicts)} equipment specs from P&ID")
             for spec in pid_specs_dicts[:3]:
-                print(f"  - {spec.get('tag')}: {spec.get('design_pressure')} psig @ {spec.get('design_temperature')}°F")
+                add_log(job_id, f"      {spec.get('tag')}: {spec.get('design_pressure')} psig @ {spec.get('design_temperature')}°F")
             return pid_specs_dicts
 
         # Run graph building, spec extraction, and wait for SOP parsing in parallel
@@ -240,7 +264,7 @@ async def run_analysis(
             sop_task  # Already started earlier
         )
 
-        print(f"[Task 3] SOP parsing complete: {len(sop_data['all_components'])} components in SOP design limits")
+        add_log(job_id, f"  -> SOP parsed: {len(sop_data['all_components'])} components in design limits")
 
         # Save edges and graph
         await pid_repository.create_edges(job_id, graph_data["edges"], component_id_map)
@@ -251,24 +275,32 @@ async def run_analysis(
 
         # Step 7: Cross-reference P&ID specs vs SOP design limits
         await pid_repository.update_job_status(job_id, "processing", 90)
-        print(f"[Task 3] Cross-referencing P&ID specs vs SOP design limits...")
+        add_log(job_id, "=" * 50)
+        add_log(job_id, "Step 7: Cross-referencing P&ID vs SOP...")
         discrepancies = await sop_cross_reference.cross_reference_with_specs(
             pid_specs_dicts,
             sop_data
         )
         summary = discrepancies.get("summary", {})
-        print(f"[Task 3] Comparison: {summary.get('matches')} matches, {summary.get('pressure_discrepancies')} pressure issues, {summary.get('temperature_discrepancies')} temp issues")
-        print(f"[Task 3] Compliance status: {summary.get('compliance_status')}")
+        add_log(job_id, f"  -> Matches: {summary.get('matches')}")
+        add_log(job_id, f"  -> Pressure discrepancies: {summary.get('pressure_discrepancies')}")
+        add_log(job_id, f"  -> Temperature discrepancies: {summary.get('temperature_discrepancies')}")
+        add_log(job_id, f"  -> Missing in P&ID: {summary.get('missing_in_pid')}")
+        add_log(job_id, f"  -> Compliance status: {summary.get('compliance_status')}")
 
         # Save discrepancies (including the new comparison format)
         await pid_repository.save_discrepancies(job_id, discrepancies, component_id_map)
 
         # Complete
         await pid_repository.update_job_status(job_id, "completed", 100)
-        print(f"[Task 3] Analysis complete for job {job_id}")
+        add_log(job_id, "=" * 50)
+        add_log(job_id, "ANALYSIS COMPLETE")
+        add_log(job_id, "=" * 50)
 
     except Exception as e:
-        print(f"[Task 3] Error in analysis: {e}")
+        add_log(job_id, "=" * 50)
+        add_log(job_id, f"ANALYSIS FAILED: {e}")
+        add_log(job_id, "=" * 50)
         traceback.print_exc()
         await pid_repository.update_job_status(
             job_id, "failed", error_message=str(e)
@@ -279,23 +311,48 @@ async def run_analysis(
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-@router.get("/status/{job_id}", response_model=JobStatus)
+@router.get("/status/{job_id}")
 async def get_analysis_status(job_id: str):
-    """Get analysis job status."""
+    """Get analysis job status and recent logs."""
     job = await pid_repository.get_job(job_id)
     if not job:
         raise HTTPException(404, "Job not found")
 
-    return JobStatus(
-        job_id=job_id,
-        status=job.get("status", "unknown"),
-        progress=job.get("progress", 0),
-        pid_filename=job.get("pid_filename"),
-        sop_filename=job.get("sop_filename"),
-        error=job.get("error_message"),
-        created_at=job.get("created_at"),
-        completed_at=job.get("completed_at"),
-    )
+    # Include recent logs in status response
+    result = {
+        "job_id": job_id,
+        "status": job.get("status", "unknown"),
+        "progress": job.get("progress", 0),
+        "pid_filename": job.get("pid_filename"),
+        "sop_filename": job.get("sop_filename"),
+        "error": job.get("error_message"),
+        "created_at": job.get("created_at"),
+        "completed_at": job.get("completed_at"),
+    }
+
+    # Add last 50 logs
+    if job_id in job_logs:
+        result["logs"] = job_logs[job_id][-50:]
+
+    return result
+
+
+@router.get("/logs/{job_id}")
+async def get_analysis_logs(job_id: str, since: int = 0):
+    """
+    Get analysis logs for a job.
+
+    Use 'since' parameter to get only new logs (for polling).
+    Returns logs from index 'since' onwards.
+    """
+    if job_id not in job_logs:
+        return {"logs": [], "total": 0}
+
+    logs = job_logs[job_id]
+    return {
+        "logs": logs[since:],
+        "total": len(logs),
+    }
 
 
 @router.get("/graph/{job_id}")

@@ -6,6 +6,7 @@ import { PIDUploader } from "./components/PIDUploader";
 import { GraphViewer } from "./components/GraphViewer";
 import { ComponentList } from "./components/ComponentList";
 import { DiscrepancyReport } from "./components/DiscrepancyReport";
+import { LogViewer } from "./components/LogViewer";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -83,17 +84,23 @@ export default function PIDAnalysisPage() {
           transition={{ duration: 0.2 }}
         >
           {activeTab === "upload" && (
-            <PIDUploader
-              onAnalysisStart={(jobId) => {
-                setCurrentJobId(jobId);
-                setAnalysisStatus("processing");
-              }}
-              onAnalysisComplete={() => {
-                setAnalysisStatus("completed");
-                setActiveTab("graph");
-              }}
-              onAnalysisError={() => setAnalysisStatus("failed")}
-            />
+            <>
+              <PIDUploader
+                onAnalysisStart={(jobId) => {
+                  setCurrentJobId(jobId);
+                  setAnalysisStatus("processing");
+                }}
+                onAnalysisComplete={() => {
+                  setAnalysisStatus("completed");
+                  setActiveTab("graph");
+                }}
+                onAnalysisError={() => setAnalysisStatus("failed")}
+              />
+              <LogViewer
+                jobId={currentJobId}
+                isRunning={analysisStatus === "processing"}
+              />
+            </>
           )}
 
           {activeTab === "graph" && currentJobId && analysisStatus === "completed" && (
