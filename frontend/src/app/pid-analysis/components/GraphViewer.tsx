@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,11 +73,7 @@ export function GraphViewer({ jobId }: Props) {
   const [zoom, setZoom] = useState(1);
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [jobId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -109,7 +105,11 @@ export function GraphViewer({ jobId }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [jobId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
@@ -262,6 +262,7 @@ export function GraphViewer({ jobId }: Props) {
             <CardContent>
               <div className="relative bg-background-dark rounded-sm border border-border overflow-auto max-h-[700px]">
                 {currentPageData && (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={`data:image/jpeg;base64,${currentPageData.annotated_image}`}
                     alt={`P&ID Page ${currentPage} with annotations`}

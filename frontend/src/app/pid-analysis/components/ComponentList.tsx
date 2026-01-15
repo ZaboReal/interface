@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,11 +58,7 @@ export function ComponentList({ jobId }: Props) {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    loadComponents();
-  }, [jobId]);
-
-  const loadComponents = async () => {
+  const loadComponents = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -85,7 +81,11 @@ export function ComponentList({ jobId }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [jobId]);
+
+  useEffect(() => {
+    loadComponents();
+  }, [loadComponents]);
 
   // Get unique types for filtering
   const uniqueTypes = Array.from(

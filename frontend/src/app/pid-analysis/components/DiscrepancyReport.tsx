@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,11 +62,7 @@ export function DiscrepancyReport({ jobId }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDiscrepancies();
-  }, [jobId]);
-
-  const loadDiscrepancies = async () => {
+  const loadDiscrepancies = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -82,7 +78,11 @@ export function DiscrepancyReport({ jobId }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [jobId]);
+
+  useEffect(() => {
+    loadDiscrepancies();
+  }, [loadDiscrepancies]);
 
   if (loading) {
     return (
