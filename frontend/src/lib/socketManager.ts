@@ -54,7 +54,11 @@ class SocketManager {
 
     console.log("[SocketManager] Creating new socket for", key);
 
-    const socket = io(window.location.origin, {
+    // Use environment variable for WebSocket URL, fallback to same origin for local dev
+    const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || window.location.origin;
+    console.log("[SocketManager] Connecting to WebSocket at:", wsUrl);
+
+    const socket = io(wsUrl, {
       auth: { userId, orgId },
       transports: ["websocket", "polling"],
       reconnection: true,
