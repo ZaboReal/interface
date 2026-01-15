@@ -1,0 +1,42 @@
+# FastAPI and server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# Document parsing
+PyMuPDF>=1.23.0
+python-docx>=1.1.0
+unstructured-client>=0.18.0
+
+# Vector embeddings
+sentence-transformers>=2.3.0
+
+# Langchain (for LLM orchestration and QA)
+langchain>=0.1.0
+langchain-openai>=0.0.5
+
+# LLM client (OpenAI only)
+openai>=1.10.0
+
+# Supabase (for vector storage with pgvector)
+supabase>=2.0.0
+
+# Utilities
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+aiofiles>=23.2.0
+
+# Data processing
+numpy>=1.26.0
+
+# Computer Vision (Task 3)
+opencv-python-headless>=4.9.0
+pytesseract>=0.3.10
+networkx>=3.2.0
+pillow>=10.2.0
+requests>=2.31.0
+
+# Azure-style P&ID digitization (high-quality OCR + geometry)
+google-cloud-vision>=3.5.0
+shapely>=2.0.0

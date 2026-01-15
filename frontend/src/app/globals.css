@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #e4e4e7;
+    --background: #09090b;
+    --background-card: #1f1f23;
+    --border: #27272a;
+    --text-secondary: #a1a1aa;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--background);
+  }
+
+  body {
+    @apply bg-background text-text-primary font-display antialiased;
+    font-feature-settings: "ss01", "ss02";
+  }
+
+  ::selection {
+    @apply bg-primary text-background;
+  }
+}
+
+@layer components {
+  /* ASCII Border Box */
+  .ascii-border {
+    @apply border border-border relative;
+  }
+
+  .ascii-border::before {
+    content: '+';
+    @apply absolute -top-1 -left-1 text-primary text-[10px];
+  }
+
+  .ascii-border::after {
+    content: '+';
+    @apply absolute -top-1 -right-1 text-primary text-[10px];
+  }
+
+  /* Terminal Cursor */
+  .terminal-cursor {
+    @apply inline-block w-2 h-[1.2em] bg-primary align-middle ml-1 animate-cursor-blink;
+  }
+
+  /* Section Title (Man-page style) */
+  .section-title {
+    @apply text-primary font-bold text-xs uppercase tracking-[0.2em];
+  }
+
+  /* Scanline Effect Overlay */
+  .scanlines {
+    @apply pointer-events-none fixed inset-0 z-50;
+    background: linear-gradient(
+      to bottom,
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.05) 50%
+    );
+    background-size: 100% 4px;
+  }
+
+  /* Terminal Grid Background */
+  .terminal-grid {
+    background-image:
+      linear-gradient(rgba(228, 228, 231, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(228, 228, 231, 0.02) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Glow indicator */
+  .status-glow {
+    @apply shadow-glow;
+  }
+
+  /* Terminal button style */
+  .btn-terminal {
+    @apply px-4 py-2 bg-primary text-background font-bold text-xs uppercase tracking-[0.1em];
+    @apply hover:bg-white transition-colors;
+  }
+
+  .btn-terminal-outline {
+    @apply px-4 py-2 border border-primary text-primary font-bold text-xs uppercase tracking-[0.1em];
+    @apply hover:bg-primary/10 transition-colors;
+  }
+
+  /* Card styles */
+  .card-terminal {
+    @apply border border-border bg-background-card/60 rounded-sm;
+  }
+
+  .card-terminal-header {
+    @apply bg-primary/5 border-b border-border px-4 py-2;
+  }
+
+  /* Progress bar */
+  .progress-terminal {
+    @apply h-1 bg-border rounded-sm overflow-hidden;
+  }
+
+  .progress-terminal-fill {
+    @apply h-full bg-primary transition-all duration-300;
+  }
+
+  /* Table styles */
+  .table-terminal {
+    @apply w-full text-left border-collapse;
+  }
+
+  .table-terminal th {
+    @apply px-4 py-3 text-2xs uppercase font-bold tracking-[0.15em] text-primary/70;
+    @apply sticky top-0 bg-background z-10;
+  }
+
+  .table-terminal td {
+    @apply px-4 py-3 text-sm;
+  }
+
+  .table-terminal tbody tr {
+    @apply hover:bg-primary/5 transition-colors border-b border-border/50;
+  }
+
+  /* Input styles */
+  .input-terminal {
+    @apply bg-background-card border border-border rounded-sm px-3 py-2;
+    @apply text-primary placeholder:text-text-muted text-sm;
+    @apply focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/40 rounded-sm;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary/60;
+}
