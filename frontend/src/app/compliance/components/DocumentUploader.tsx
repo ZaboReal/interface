@@ -45,7 +45,7 @@ export function DocumentUploader({
   const [ingestProgress, setIngestProgress] = useState<{ current: number; total: number } | null>(null);
 
   // SOP state
-  const [sopData, setSopData] = useState<any>(null);
+  const [sopData, setSopData] = useState<{ filename: string; sections: number; preview: string } | null>(null);
   const [uploadingSop, setUploadingSop] = useState(false);
 
   // Mode: 'select' or 'upload'
@@ -233,14 +233,14 @@ export function DocumentUploader({
             setIsAnalyzing(false);
             onAnalysisError();
           }
-        } catch (error) {
+        } catch {
           clearInterval(pollInterval);
           setIsAnalyzing(false);
           onAnalysisError();
         }
       }, 1000);
-    } catch (error) {
-      console.error("Analysis failed:", error);
+    } catch (err) {
+      console.error("Analysis failed:", err);
       setIsAnalyzing(false);
       onAnalysisError();
     }
@@ -306,7 +306,7 @@ export function DocumentUploader({
                 <div className="text-center py-6">
                   <p className="text-text-muted mb-2">No regulations in database</p>
                   <p className="text-2xs text-text-muted">
-                    Switch to "Upload New" to add regulations
+                    Switch to &quot;Upload New&quot; to add regulations
                   </p>
                 </div>
               ) : (

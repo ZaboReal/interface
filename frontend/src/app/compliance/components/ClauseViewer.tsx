@@ -44,6 +44,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   general: "&#9632;",
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function ClauseViewer({ jobId }: Props) {
   const [clauses, setClauses] = useState<Clause[]>([]);
   const [loading, setLoading] = useState(true);

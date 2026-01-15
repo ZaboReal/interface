@@ -33,7 +33,7 @@ export function PIDUploader({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [, setCurrentJobId] = useState<string | null>(null);
 
   // File state
   const [pidFile, setPidFile] = useState<File | null>(null);
@@ -41,7 +41,7 @@ export function PIDUploader({
 
   // Recent jobs
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
-  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [, setLoadingJobs] = useState(true);
 
   // Load recent jobs on mount
   useEffect(() => {
@@ -135,14 +135,14 @@ export function PIDUploader({
             setProgressMessage(`Error: ${status.error || "Unknown error"}`);
             onAnalysisError();
           }
-        } catch (error) {
+        } catch {
           clearInterval(pollInterval);
           setIsAnalyzing(false);
           onAnalysisError();
         }
       }, 1000);
-    } catch (error) {
-      console.error("Analysis failed:", error);
+    } catch (err) {
+      console.error("Analysis failed:", err);
       setIsAnalyzing(false);
       onAnalysisError();
     }
