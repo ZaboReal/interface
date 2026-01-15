@@ -147,8 +147,7 @@ Return JSON: {{"equipment": [...]}}"""
                     },
                     {"role": "user", "content": prompt}
                 ],
-                response_format={"type": "json_object"},
-                reasoning={"effort": "minimal"}
+                response_format={"type": "json_object"}
             )
 
             result_text = response.choices[0].message.content

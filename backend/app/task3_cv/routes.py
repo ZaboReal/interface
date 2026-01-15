@@ -277,8 +277,41 @@ async def run_analysis(
         await pid_repository.update_job_status(job_id, "processing", 90)
         add_log(job_id, "=" * 50)
         add_log(job_id, "Step 7: Cross-referencing P&ID vs SOP...")
+
+        # IMPORTANT: Combine title block specs with detected component tags
+        # This ensures we match components even if they don't have design specs in title blocks
+        detected_tags = []
+        for comp in all_components:
+            tag = comp.get("tag")
+            if tag:
+                detected_tags.append({
+                    "tag": tag,
+                    "description": comp.get("type", ""),
+                    "design_pressure": None,
+                    "design_temperature": None,
+                    "source": "symbol_detection"
+                })
+
+        # Merge: start with title block specs, add detected tags that aren't already in specs
+        spec_tags = {s.get("tag", "").upper() for s in pid_specs_dicts}
+        combined_pid_data = list(pid_specs_dicts)
+        for dt in detected_tags:
+            if dt["tag"].upper() not in spec_tags:
+                combined_pid_data.append(dt)
+
+        add_log(job_id, f"  P&ID title block specs: {len(pid_specs_dicts)}")
+        add_log(job_id, f"  P&ID detected symbols with tags: {len(detected_tags)}")
+        add_log(job_id, f"  Combined P&ID components: {len(combined_pid_data)}")
+        add_log(job_id, f"  SOP components: {len(sop_data.get('all_components', []))}")
+
+        # Log what tags we're comparing
+        pid_tag_list = [c.get("tag") for c in combined_pid_data if c.get("tag")]
+        sop_tag_list = [c.get("tag") for c in sop_data.get("all_components", []) if c.get("tag")]
+        add_log(job_id, f"  P&ID tags: {pid_tag_list[:10]}...")
+        add_log(job_id, f"  SOP tags: {sop_tag_list[:10]}...")
+
         discrepancies = await sop_cross_reference.cross_reference_with_specs(
-            pid_specs_dicts,
+            combined_pid_data,
             sop_data
         )
         summary = discrepancies.get("summary", {})
