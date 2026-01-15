@@ -121,35 +121,24 @@ interface ComplianceResult {
 
 ## How to Use
 
-### 1. Start the Application
+### 1. Access the Compliance Page
 
-```bash
-# From the app directory
-./start.sh
-```
+Click on **"Compliance"** in the sidebar to access the regulatory compliance analyzer.
 
-### 2. Access the Compliance Page
-
-Navigate to `http://localhost:3000` and click on **"Compliance"** in the sidebar, or go directly to:
-
-```
-http://localhost:3000/compliance
-```
-
-### 3. Upload Regulations
+### 2. Upload Regulations
 
 1. Click the **"Upload Regulations"** section
 2. Select one or more regulation PDF files (e.g., OSHA 29 CFR 1910.119)
 3. Click **"Ingest"** to extract and index clauses
 4. Wait for processing to complete (progress shown in logs)
 
-### 4. Upload Your SOP
+### 3. Upload Your SOP
 
 1. Click the **"Upload SOP"** section
 2. Select your SOP document (PDF or DOCX)
 3. The document will be parsed and chunked automatically
 
-### 5. Run Analysis
+### 4. Run Analysis
 
 1. Click **"Analyze Compliance"**
 2. The system will:
@@ -158,7 +147,7 @@ http://localhost:3000/compliance
    - Generate compliance report
 3. View results in the Compliance Report panel
 
-### 6. Review Results
+### 5. Review Results
 
 The report shows:
 - **Compliance Rate**: Percentage of applicable requirements met
@@ -167,7 +156,7 @@ The report shows:
 - **Gaps**: Requirements not addressed (action needed)
 - **Non-Compliant**: SOP contradicts requirements (urgent action)
 
-### 7. Semantic Search
+### 6. Semantic Search
 
 Use the search panel to find clauses by meaning:
 - Search "fire safety equipment" to find all fire-related requirements
@@ -185,21 +174,3 @@ Use the search panel to find clauses by meaning:
 | `/api/regulation/analyze/{job_id}` | GET | Get analysis results |
 | `/api/regulation/search` | POST | Semantic search of clauses |
 
-## Environment Variables
-
-```env
-# Backend (.env)
-OPENAI_API_KEY=your-openai-key          # Required for LLM
-SUPABASE_URL=your-supabase-url          # For persistence
-SUPABASE_KEY=your-supabase-key
-CHROMA_PERSIST_DIR=./chroma_data        # Vector DB storage
-```
-
-## Sample Regulations Included
-
-The `/data/regulations/` folder contains sample regulations for testing:
-- REG-29 CFR 1910 119 (OSHA Process Safety)
-- REG-NFPA 86 (Ovens and Furnaces)
-- REG-API 510 2022 (Pressure Vessel Inspection)
-- REG-40 CFR Part 63 (EPA Air Quality)
-- And more...

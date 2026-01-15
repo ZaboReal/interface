@@ -56,29 +56,11 @@ Frontend (Next.js)                    Backend (FastAPI)
 
 ## How to Use
 
-### 1. Start the Application
+### 1. Access the Review Page
 
-```bash
-# From the app directory
-./start.sh
+Click on **"SOP Review"** in the sidebar to access the collaborative editor.
 
-# Or manually:
-# Terminal 1 - Backend
-cd backend && python run.py
-
-# Terminal 2 - Frontend
-cd frontend && npm run dev
-```
-
-### 2. Access the Review Page
-
-Navigate to `http://localhost:3000` and click on **"SOP Review"** in the sidebar, or go directly to:
-
-```
-http://localhost:3000/review
-```
-
-### 3. Join a Session
+### 2. Join a Session
 
 When the page loads, you'll see an onboarding modal:
 
@@ -86,7 +68,7 @@ When the page loads, you'll see an onboarding modal:
 2. Enter your **User ID** (e.g., `john-doe`)
 3. Click **"Join Session"**
 
-### 4. Collaborate
+### 3. Collaborate
 
 Once connected:
 
@@ -95,13 +77,13 @@ Once connected:
 - **View History**: Check the right sidebar for edit history
 - **Track Status**: The status card shows document state and character count
 
-### 5. Multi-User Testing
+### 4. Multi-User Collaboration
 
-To test collaboration:
+To collaborate with others:
 
-1. Open the same URL in multiple browser tabs/windows
-2. Use the same `orgId` but different `userId` values
-3. Type in one window and watch changes appear in others instantly
+1. Share the website URL with team members
+2. Have everyone use the same `orgId` but different `userId` values
+3. Type in one browser and watch changes appear in others instantly
 
 ## Features
 
@@ -114,13 +96,3 @@ To test collaboration:
 | Character Count | Live character count tracking |
 | Reconnection | Automatic reconnection on connection loss |
 
-## Environment Variables
-
-```env
-# Frontend (.env.local)
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
-
-# Backend (.env)
-SUPABASE_URL=your-supabase-url      # Optional
-SUPABASE_KEY=your-supabase-key      # Optional
-```

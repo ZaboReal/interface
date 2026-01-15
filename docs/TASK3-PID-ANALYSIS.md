@@ -143,26 +143,11 @@ Report: 2 matches, 1 pressure issue, 1 missing component
 
 ## How to Use
 
-### 1. Start the Application
+### 1. Access the P&ID Analysis Page
 
-```bash
-# From the app directory
-./start.sh
+Click on **"P&ID Analysis"** in the sidebar to access the diagram analyzer.
 
-# Or manually:
-cd backend && python run.py   # Terminal 1
-cd frontend && npm run dev    # Terminal 2
-```
-
-### 2. Access the P&ID Analysis Page
-
-Navigate to `http://localhost:3000` and click on **"P&ID Analysis"** in the sidebar, or go directly to:
-
-```
-http://localhost:3000/pid-analysis
-```
-
-### 3. Upload Files
+### 2. Upload Files
 
 In the **UPLOAD** tab:
 
@@ -176,7 +161,7 @@ In the **UPLOAD** tab:
 
 3. Click **"START_PID_ANALYSIS"**
 
-### 4. Monitor Progress
+### 3. Monitor Progress
 
 The progress bar shows:
 - PDF conversion status
@@ -186,7 +171,7 @@ The progress bar shows:
 - SOP parsing status
 - Cross-reference status
 
-### 5. View Results
+### 4. View Results
 
 Navigate through the tabs:
 
@@ -221,25 +206,6 @@ Navigate through the tabs:
 | `/api/cv/sop-components/{job_id}` | GET | Get SOP equipment list |
 | `/api/cv/discrepancies/{job_id}` | GET | Get cross-reference report |
 | `/api/cv/annotated-images/{job_id}` | GET | Get annotated P&ID images |
-
-## Environment Variables
-
-```env
-# Backend (.env)
-OPENAI_API_KEY=your-openai-key           # For SOP parsing
-ROBOFLOW_API_KEY=your-roboflow-key       # For YOLO detection
-SUPABASE_URL=your-supabase-url           # For persistence
-SUPABASE_KEY=your-supabase-key
-
-# Frontend (.env.local)
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-## Sample Data
-
-The `/data/` folder contains sample files for testing:
-- `pid/diagram.pdf` - Sample P&ID diagram
-- `sop/sop_cv.docx` - Sample SOP with design specifications
 
 ## Detection Capabilities
 
