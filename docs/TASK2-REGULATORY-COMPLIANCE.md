@@ -16,11 +16,7 @@ We built an LLM-powered compliance analysis pipeline that:
 
 1. **Extracts Clauses from Regulations**: Parses regulation PDFs and uses GPT-4 to extract individual requirements, categorizing them by type (mandatory/recommended/prohibited), severity, and category.
 
-2. **SOP-First Analysis**: Rather than checking every clause against the SOP (which would flag many irrelevant requirements), we take an SOP-first approach:
-   - Chunk the SOP into logical sections
-   - Use semantic search to find potentially relevant clauses
-   - Verify applicability with LLM reasoning
-   - Report only gaps that actually apply
+2. **SOP-First Analysis (SOP → Regulations)**: We analyze starting from the SOP and search for relevant regulations, rather than the traditional approach of checking every regulation clause against the SOP.
 
 3. **Parallel Processing**: Regulations can have hundreds of clauses. We process them in parallel (10 concurrent LLM calls) to keep analysis times reasonable.
 
@@ -32,10 +28,17 @@ We built an LLM-powered compliance analysis pipeline that:
 
 - **Page-by-Page Processing**: We process PDFs one page at a time rather than the whole document. This improves accuracy and allows for better source tracking.
 
-- **SOP-First vs Clause-First**: We chose SOP-first analysis because:
+- **SOP → Regulations vs Regulations → SOP**:
+
+  The traditional approach is **Regulations → SOP**: iterate through every regulation clause and check if the SOP addresses it. This provides complete coverage but is extremely slow (potentially thousands of LLM calls) and generates many false positives for irrelevant clauses.
+
+  We chose **SOP → Regulations**: chunk the SOP into sections, then use semantic search to find relevant regulation clauses for each section. This is significantly faster because:
+  - We only process clauses that are semantically relevant to the SOP content
   - Most regulations contain clauses irrelevant to any given SOP
   - Users care about gaps in *their* document, not all possible requirements
   - Reduces false positives and noise in reports
+
+  **Trade-off**: We prioritized speed over exhaustive coverage. The traditional approach would catch edge cases where a regulation applies but isn't semantically similar to any SOP section, but at the cost of much longer processing times.
 
 - **Semantic Search + LLM Verification**: Two-stage matching - vector similarity finds candidates, then LLM confirms relevance. This balances speed with accuracy.
 

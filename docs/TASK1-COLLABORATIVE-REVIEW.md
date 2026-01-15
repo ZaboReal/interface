@@ -85,6 +85,13 @@ To collaborate with others:
 2. Have everyone use the same `orgId` but different `userId` values
 3. Type in one browser and watch changes appear in others instantly
 
+### 5. Debugging & Inspection
+
+You can verify the real-time sync is working in two ways:
+
+1. **Use the UI**: Open multiple browser windows side-by-side and watch edits sync
+2. **Inspect Element**: Open browser DevTools (F12) and check the Network tab to see WebSocket messages being sent/received in real-time
+
 ## Features
 
 | Feature | Description |

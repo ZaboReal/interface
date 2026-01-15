@@ -33,6 +33,8 @@ We built an automated P&ID analysis pipeline that:
 
 ### Technical Decisions
 
+- **Microsoft Azure Document Intelligence Techniques**: Our vision pipeline is inspired by Microsoft Azure's document intelligence approaches for technical diagram analysis. We combine multiple CV techniques (object detection, OCR, line detection) in a pipeline architecture similar to Azure's Form Recognizer and Custom Vision services.
+
 - **YOLO via Roboflow**: We use a pre-trained P&ID symbol detection model via Roboflow's API. This provides high accuracy without needing to train our own model. We include a fallback to traditional CV (contour detection) if the API is unavailable.
 
 - **Parallel Multi-Page Processing**: P&IDs are often multi-page PDFs. We process pages in parallel to minimize total analysis time.
