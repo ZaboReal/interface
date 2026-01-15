@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
 
 const navigation = [
   {
@@ -82,18 +81,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* System Status Panel */}
-      <div className="p-3 border-t border-border">
-        <div className="ascii-border p-3 bg-background">
-          <h3 className="text-2xs font-bold text-primary uppercase tracking-[0.15em] mb-3">
-            System_Status
-          </h3>
-          <div className="space-y-3">
-            <Progress value={42} max={100} label="CPU_USAGE" showValue />
-            <Progress value={68} max={100} label="MEM_USED" showValue />
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

@@ -66,15 +66,15 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="h-full flex flex-col opacity-60">
+          <Card className="h-full flex flex-col">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Reg_Compliance</CardTitle>
-                <Badge variant="outline">Coming Soon</Badge>
+                <Badge variant="success" pulse>Active</Badge>
               </div>
             </CardHeader>
             <CardContent className="flex-1">
-              <div className="text-6xl text-text-muted mb-4">&#9670;</div>
+              <div className="text-6xl text-primary mb-4">&#9670;</div>
               <p className="text-text-secondary text-sm">
                 Regulatory compliance document processor with LLM-powered clause extraction
                 and semantic matching.
@@ -87,9 +87,9 @@ export default function DashboardPage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" variant="secondary" disabled>
-                LOCKED
-              </Button>
+              <Link href="/compliance" className="w-full">
+                <Button className="w-full">ENTER</Button>
+              </Link>
             </CardFooter>
           </Card>
         </motion.div>

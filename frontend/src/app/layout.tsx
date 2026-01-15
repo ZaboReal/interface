@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { CommandBar } from "@/components/layout/CommandBar";
 import { Scanlines } from "@/components/layout/Scanlines";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/providers";
@@ -29,7 +28,6 @@ export default function RootLayout({
               {children}
             </main>
           </div>
-          <CommandBar />
           <Toaster />
         </Providers>
       </body>
