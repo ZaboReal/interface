@@ -159,8 +159,7 @@ Return: {{"components": [...]}}"""
                     {"role": "system", "content": "SOP parser. Return only JSON."},
                     {"role": "user", "content": prompt}
                 ],
-                response_format={"type": "json_object"},
-                reasoning={"effort": "minimal"}
+                response_format={"type": "json_object"}
             )
 
             result_text = response.choices[0].message.content
@@ -277,8 +276,7 @@ Return JSON:
                     {"role": "system", "content": "Equipment comparison. Return only JSON."},
                     {"role": "user", "content": prompt}
                 ],
-                response_format={"type": "json_object"},
-                reasoning={"effort": "minimal"}
+                response_format={"type": "json_object"}
             )
 
             result_text = response.choices[0].message.content
